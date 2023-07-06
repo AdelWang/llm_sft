@@ -1,3 +1,4 @@
+## batch_size = gradient_accumulation_steps * num_gpus * per_device_train_batch_size
 YOUR_DATA_DIR=''
 YOUR_OUTPUT_DIR=''
 MODEL_NAME="bigscience/bloom-7b"
@@ -10,7 +11,7 @@ deepspeed --master_port=29500 main.py \
     --deepspeed_config ./data_utils/deepspeed_config.json \
     --gradient_accumulation_steps 16 \
     --eval_batch_size 4 \
-    --num_train_epochs 1 \
+    --num_train_epochs 3 \
     --save_steps 1000 \
     --lora \
     --learning_rate 2e-4 \
