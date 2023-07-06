@@ -1,10 +1,11 @@
 envs配置：
+```
 torch==2.0.0+cu117
 transformers==4.28.1
 tokenizers >= 0.13.1
 deepspeed == 0.9.2
 peft == 0.2.0
-
+```
 
 *****   数据格式    *****
 jsonl形式， 存放路径
