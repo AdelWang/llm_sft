@@ -201,6 +201,10 @@ parser.add_argument(
     help='Temperature for model generation.'
 )
 parser.add_argument(
+    "--gradient_checkpointing",
+    action='store_true'
+)
+parser.add_argument(
     "--do_train",
     action='store_true'
 )
@@ -250,7 +254,8 @@ model_args = {
     "offload_optimizer": args.offload_optimizer,
     "deepspeed_config": args.deepspeed_config,
     "zero_shot": args.zero_shot,
-    "mode": args.mode
+    "mode": args.mode,
+    "gradient_checkpointing": args.gradient_checkpointing
 }
 args = ModelArgs()
 args.update(model_args)
@@ -359,6 +364,10 @@ if args.model_type == "decoder":
 
 if args.lora:
     model = get_peft_model(model, lora_config)
+    
+if args.gradient_checkpointing:
+    model.enable_input_require_grads()
+    
 
 if args.checkpoint_dir is not None:
     from deepspeed.utils.zero_to_fp32 import load_state_dict_from_zero_checkpoint
