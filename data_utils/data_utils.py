@@ -196,6 +196,7 @@ class ModelArgs:
     deepspeed_config: str = None
     zero_shot: bool = False
     mode: str = "sft"
+    gradient_checkpointing: bool = False
 
     def save(self, output_dir):
         os.makedirs(output_dir, exist_ok=True)
