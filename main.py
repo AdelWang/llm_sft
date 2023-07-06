@@ -80,7 +80,7 @@ parser.add_argument(
 parser.add_argument(
     "--deepspeed_config",
     type=str,
-    default="/mnt/dolphinfs/hdd_pool/docker/user/hadoop-aipnlp/wangkeheng/code/llm/deepspeed_config.json",
+    default="data_utils/deepspeed_config.json",
     help="Path to save trained model.",
 )
 
