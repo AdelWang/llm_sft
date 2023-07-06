@@ -25,14 +25,15 @@ deepspeed --master_port=29500 main.py \
     --max_length 2048 \
     --eval_batch_size 4 \
     --num_train_epochs 5 \
-    --lora \
     --do_train \
     --do_eval
 ```
-model tested：
- | llama-7B |
- | bloom-7b |
- | chatglm-6b |
+#### Supported Models
+The following models are tested:
+- [THUDM/chatglm-6b](https://huggingface.co/THUDM/chatglm-6b)
+- [bigscience/bloom-7b1](https://huggingface.co/bigscience/bloom-7b1)
+- [IDEA-CCNL/Ziya-LLaMA-13B-v1](https://huggingface.co/IDEA-CCNL/Ziya-LLaMA-13B-v1)
+- [llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf)
 
 use --lora to enable lora training, --do_eval will generate a pred_for_eval.json file in output_dir with the following format:
 ```
@@ -44,6 +45,6 @@ use --lora to enable lora training, --do_eval will generate a pred_for_eval.json
 ]
 ```
 踩坑：
-llama config.json的 pad_token_id为-1，需要手动改成 0，不然有时候会报 cuda-side trigger error
+llama config.json 的 pad_token_id 为-1，需要手动改成 0，不然有时候会报 cuda-side trigger error
 
   
