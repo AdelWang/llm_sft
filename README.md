@@ -35,7 +35,9 @@ The following models are tested:
 - [IDEA-CCNL/Ziya-LLaMA-13B-v1](https://huggingface.co/IDEA-CCNL/Ziya-LLaMA-13B-v1)
 - [llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf)
 
-use --lora to enable lora training, --do_eval will generate a pred_for_eval.json file in output_dir with the following format:
+use --lora to enable lora training
+use --gradient_checkpointing to enable graident_checkpointing
+--do_eval will generate a pred_for_eval.json file in output_dir with the following format:
 ```
 [
     {
