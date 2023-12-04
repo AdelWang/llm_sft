@@ -97,7 +97,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--deepspeed_config",
+    "--data_utils/deepspeed_config.json",
     type=str,
     default="deepspeed_config.json",
     help="Path to save trained model.",
