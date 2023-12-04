@@ -18,6 +18,7 @@ from transformers import (
     StoppingCriteria,
     StoppingCriteriaList
 )
+import random
 
 
 logger = logging.getLogger(__name__)
@@ -27,12 +28,26 @@ def read_data(file_name):
     data = [json.loads(d) for d in f]
     inputs = []
     targets = []
+    task_type = []
+    choices = []
     for index, d in enumerate(data):
-        if pd.isnull(d['target']) or pd.isna(d['target']):
-            continue
+        if isinstance(d['target'], list):
+            if len(d['target']) < 1:
+                continue
+        else:
+            if pd.isnull(d['target']) or pd.isna(d['target']):
+                continue
         inputs.append(d['input'])
         targets.append(d['target'])
-    dict_ = {'input': inputs, 'output': targets}
+        if 'task_type' in d:
+            task_type.append(d['task_type'])
+        else:
+            task_type.append('')
+        if "choice" in d:
+            choices.append(d['choice'])
+        else:
+            choices.append('')
+    dict_ = {'input': inputs, 'output': targets, 'task_type': task_type, 'choice': choices}
     df_data = pd.DataFrame(dict_)
     df_data.dropna(axis=0, how='any')
 
@@ -58,7 +73,9 @@ class Seq2SeqDataset(Dataset):
     def __init__(self, data):
         inputs = list(data["input"])
         outputs = list(data['output'])
-        self.examples = [[i, o] for i, o in zip(inputs, outputs)]
+        task_type = list(data['task_type'])
+        choices = list(data['choice'])
+        self.examples = [[i, o, t, c] for i, o, t, c in zip(inputs, outputs, task_type, choices)]
 
     def __len__(self):
         return len(self.examples)
@@ -74,8 +91,12 @@ class Seq2SeqCollator(object):
 
     def __call__(self, batch):
         if self.mode == "dev":
-            batch = [d[0] for d in batch]
-            inputs = self.tokenizer(batch, max_length=self.args.max_length, truncation=True, padding=True, return_tensors='pt')
+            inputs = [d[0] for d in batch]
+            targets = [d[1] for d in batch]
+            task_type = [d[2] for d in batch]
+            choices = [d[-1] for d in batch]
+            inputs = self.tokenizer(inputs, max_length=self.args.max_length, truncation=True, padding=True, return_tensors='pt')
+            return inputs, targets, task_type, choices
         else:
             inputs = preprocess_data_batch(batch, self.tokenizer, self.args)
 
@@ -85,13 +106,29 @@ class Seq2SeqCollator(object):
 def preprocess_data_batch(data, tokenizer, args):
     inputs = [d[0] for d in data]
     targets = [d[1] for d in data]
+    if args.single_answer:
+        targets = [t.split("\t") for t in targets]
+        targets = [random.choice(t) for t in targets]
 
     if args.model_type == "decoder":
+        if args.mode == "pretrain":
+            inputs = tokenizer(
+                inputs,
+                max_length=args.max_seq_length,
+                padding=True,
+                truncation=True,
+                return_tensors='pt'
+            )
+            labels = inputs['input_ids'].clone().contiguous()
+            labels[labels[:, :] == tokenizer.pad_token_id] = -100
+            type_token_ids = inputs['attention_mask'].long()
+            inputs['labels'] = labels
+            inputs["type_token_ids"] = type_token_ids
+            return inputs
+            
         # decoder-only model
         inputs = tokenizer(
-            inputs,
-            max_length=args.max_length - 1,
-            truncation=True
+            inputs
         )
         targets = tokenizer(
             targets,
@@ -99,12 +136,12 @@ def preprocess_data_batch(data, tokenizer, args):
         )
         input_ids = inputs['input_ids']
         target_ids = targets['input_ids']
-        concat_input = [input_ids[i] + target_ids[i] for i in range(len(input_ids))]
-        concat_input = [c_[: args.max_length] for c_ in concat_input]
+        concat_input = [i + t for i, t in zip(input_ids, target_ids)]
         if not args.open_ended:
             concat_input = [c_ids + [tokenizer.eos_token_id] for c_ids in concat_input]
+        concat_input = [c_[: args.max_length] for c_ in concat_input]
 
-        type_token_ids = [[0] * len(input_ids[i]) + [1] * (len(concat_input[i]) - len(input_ids[i])) for i in range(len(input_ids))]
+        type_token_ids = [[0] * min(len(concat_input[i]), len(input_ids[i])) + [1] * (len(concat_input[i]) - len(input_ids[i])) for i in range(len(input_ids))]
         attention_mask = [[1] * len(concat_input[i]) for i in range(len(input_ids))]
         
         max_batch_length = 0
@@ -165,10 +202,10 @@ class ModelArgs:
     checkpoint_dir: str = None
     output_dir: str = None
     data_dir: str = None
-    deepspeed_config = None
+    deepspeed_config: str = "deepspeed_config.json"
     do_train: bool = True
     do_eval: bool = False
-    num_train_epochs = 10
+    num_train_epochs: int = 10
     warmup_ratio: float = 0.1
     warmup_steps: int = None
     save_steps: int = 500
@@ -197,6 +234,10 @@ class ModelArgs:
     zero_shot: bool = False
     mode: str = "sft"
     gradient_checkpointing: bool = False
+    lr_scheduler: str = "linear"
+    num_return_sequences: int = 1
+    stage: int = 2
+    single_answer: bool = False
 
     def save(self, output_dir):
         os.makedirs(output_dir, exist_ok=True)
