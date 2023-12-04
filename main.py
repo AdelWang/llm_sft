@@ -42,8 +42,7 @@ from peft import LoraConfig, get_peft_model
 import argparse
 from deepspeed.utils.zero_to_fp32 import load_state_dict_from_zero_checkpoint
 import time
-# import sys
-# sys.path.append('/mnt/dolphinfs/hdd_pool/docker/user/hadoop-aipnlp/wangkeheng/code/llm/eval_utils')
+
 # from eval_metric import *
 # from colossalai.nn.optimizer import HybridAdam
 # from colossalai.nn.optimizer.zero_optimizer import ZeroOptimizer
@@ -100,7 +99,7 @@ parser.add_argument(
 parser.add_argument(
     "--deepspeed_config",
     type=str,
-    default="/mnt/dolphinfs/hdd_pool/docker/user/hadoop-aipnlp/wangkeheng/code/llm/deepspeed_config.json",
+    default="deepspeed_config.json",
     help="Path to save trained model.",
 )
 
@@ -544,14 +543,6 @@ if args.do_train:
     warmup_steps = math.ceil(t_total * args.warmup_ratio) if args.warmup_steps is None else args.warmup_steps
     args.warmup_steps = warmup_steps
     print(f'''Total steps is {t_total}\nWarmup steps is {warmup_steps}''')
-    
-    # deepspeed_config['optimizer']["params"]['lr'] = args.learning_rate
-    # deepspeed_config['optimizer']["params"]['weight_decay'] = args.weight_decay
-
-    # deepspeed_config['scheduler']["params"]['warmup_num_steps'] = args.warmup_steps
-    # deepspeed_config['scheduler']["params"]['total_num_steps'] = t_total
-    # deepspeed_config['scheduler']["params"]['warmup_max_lr'] = args.learning_rate
-    # deepspeed_config['scheduler']["params"]['warmup_min_lr'] = 0
 
     optimizer_grouped_parameters = getOptimizerGroup(model=model)
     optimizer = optimizer_class(optimizer_grouped_parameters, lr=args.learning_rate, betas=[0.9, 0.95])
